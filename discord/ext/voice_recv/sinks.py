@@ -8,6 +8,7 @@ import time
 import wave
 import shlex
 import inspect
+import asyncio
 import audioop
 import logging
 import threading
@@ -271,8 +272,12 @@ class BasicSink(AudioSink):
         decode: bool = True,
     ):
         super().__init__()
-
-        self.cb = event
+        if asyncio.iscoroutinefunction(event):
+            def wrapper(member: discord.Member | User | None, vd: VoiceData) -> Any:
+                return asyncio.run(event(member, vd))
+            self.cb = wrapper
+        else:
+            self.cb = event
         self.cb_rtcp = rtcp_event
         self.decode = decode
 
